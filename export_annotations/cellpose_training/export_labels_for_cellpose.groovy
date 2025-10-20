@@ -2,7 +2,7 @@ def imageData = getCurrentImageData()
 def hierarchy = imageData.getHierarchy()
 
 // Create output path (relative to project)
-def outputDir = buildFilePath(PROJECT_BASE_DIR, 'export_nsc-em')
+def outputDir = buildFilePath(PROJECT_BASE_DIR, 'export')
 mkdirs(outputDir)
 
 // Create output subfolders
