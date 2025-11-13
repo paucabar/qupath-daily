@@ -9,7 +9,7 @@ def cal = server.getPixelCalibration()
 //def pathObjects = hierarchy.getAnnotationObjects()
 
 // Find all annotation objects classified as 'Neurosphere'
-def neurosphereObjects = hierarchy.getAnnotationObjects().findAll { it.getPathClass() == getPathClass("Neurosphere") }
+def neurosphereObjects = hierarchy.getAnnotationObjects().findAll { it.getPathClass() == getPathClass("YOUR_CLASS_NAME") }
 
 // Add shape measurements
 neurosphereObjects.parallelStream().forEach(c -> ObjectMeasurements.addShapeMeasurements(c, cal))

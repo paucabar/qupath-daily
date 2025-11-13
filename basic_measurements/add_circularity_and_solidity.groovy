@@ -1,7 +1,7 @@
 import qupath.lib.roi.RoiTools
 
 // Find all annotations classified as "Mitochondria"
-parentAnnotations = getAnnotationObjects().findAll { it.getPathClass() == getPathClass("Mitochondria") }
+parentAnnotations = getAnnotationObjects().findAll { it.getPathClass() == getPathClass("YOUR_CLASS_NAME") }
 
 // Process each annotation
 for (parent in parentAnnotations) {
