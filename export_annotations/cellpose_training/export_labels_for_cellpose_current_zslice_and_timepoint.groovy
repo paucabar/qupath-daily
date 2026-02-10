@@ -51,7 +51,7 @@ def name = GeneralTools.getNameWithoutExtension(imageData.getServer().getMetadat
 
 // Define export paths
 def pathInstance = buildFilePath(instanceDir, name + "_frame${timepoint}_mask.tif") // Define instance output file paths
-def pathImage = buildFilePath(imageDir, name + "_frame${timepoint}_img.tif") // Define image output file path
+def pathImage = buildFilePath(imageDir, name + "_slice${zSlice}_frame${timepoint}_img.tif") // Define image output file path
 
 // Write the images (Ensures only the current frame is exported)
 writeImageRegion(instanceServer, region, pathInstance) // Export annotations only for current frame
