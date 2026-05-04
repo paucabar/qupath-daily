@@ -1,47 +1,46 @@
 import qupath.lib.objects.PathAnnotationObject
 import qupath.lib.measurements.MeasurementList
 
-// Get all annotation objects
+// ── Configuration ────────────────────────────────────────────────────────────
+def sourceClassName = "YOUR_SOURCE_CLASS"  // class to measure from
+def targetClassName = "YOUR_TARGET_CLASS"  // class to measure to
+// ─────────────────────────────────────────────────────────────────────────────
+
 def annotations = getAnnotationObjects()
 
-// Filter annotations by class using getPathClass("ClassName")
-def mitoClass = getPathClass("Mitochondria")
-def nucleusClass = getPathClass("Nucleus")
+def sourceClass = getPathClass(sourceClassName)
+def targetClass = getPathClass(targetClassName)
 
-def mitoAnnotations = annotations.findAll { it.getPathClass() == mitoClass }
-def nucleusAnnotations = annotations.findAll { it.getPathClass() == nucleusClass }
+def sourceAnnotations = annotations.findAll { it.getPathClass() == sourceClass }
+def targetAnnotations = annotations.findAll { it.getPathClass() == targetClass }
 
-if (mitoAnnotations.isEmpty() || nucleusAnnotations.isEmpty()) {
-    println "No Mitochondria or Nucleus annotations found!"
+if (sourceAnnotations.isEmpty() || targetAnnotations.isEmpty()) {
+    println "No ${sourceClassName} or ${targetClassName} annotations found!"
     return
 }
 
-// Get pixel calibration info
 def cal = getCurrentServer().getPixelCalibration()
 def pixelSize = cal.getAveragedPixelSize()
 def unit = cal.getPixelWidthUnit()
 
-// Loop over each mitochondria and compute distance to closest nucleus
-mitoAnnotations.each { mito ->
-    def mitoGeom = mito.getROI().getGeometry()
-    def mitoPlane = mito.getROI().getImagePlane()
+sourceAnnotations.each { source ->
+    def sourceGeom = source.getROI().getGeometry()
+    def sourcePlane = source.getROI().getImagePlane()
 
     def minDistance = Double.MAX_VALUE
 
-    nucleusAnnotations.each { nucleus ->
-        if (nucleus.getROI().getImagePlane() != mitoPlane)
-            return // Skip nuclei on different planes
+    targetAnnotations.each { target ->
+        if (target.getROI().getImagePlane() != sourcePlane)
+            return  // skip targets on different planes
 
-        def nucleusGeom = nucleus.getROI().getGeometry()
-        def distance = mitoGeom.distance(nucleusGeom)
-        if (distance < minDistance) {
+        def targetGeom = target.getROI().getGeometry()
+        def distance = sourceGeom.distance(targetGeom)
+        if (distance < minDistance)
             minDistance = distance
-        }
     }
 
-    // Add measurement to mitochondria annotation
     def distanceCalibrated = minDistance * pixelSize
-    mito.getMeasurementList().putMeasurement("Distance to nearest nucleus (${unit})", distanceCalibrated)
+    source.getMeasurementList().putMeasurement("Distance to nearest ${targetClassName} (${unit})", distanceCalibrated)
 }
 
-println "Done! Distance measurements added to ${mitoAnnotations.size()} mitochondria annotations."
+println "Done! Distance measurements added to ${sourceAnnotations.size()} ${sourceClassName} annotations."

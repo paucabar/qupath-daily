@@ -5,12 +5,17 @@
  * Any name that is null will be left unchanged (not recommended).
  */
 
+// ── Configuration ────────────────────────────────────────────────────────────
+def channelNames3 = ["DAPI", "Nestin", "NeuN"]           // Change to match your channel names (3-channel images)
+def channelNames4 = ["DAPI", "Cre", "Nestin", "NeuN"]    // Change to match your channel names (4-channel images)
+// ─────────────────────────────────────────────────────────────────────────────
+
 def imageData = getCurrentImageData()
-def server = imageData.getServer()
+def server    = imageData.getServer()
 int nChannels = server.nChannels()
 
 if (nChannels == 3) {
-    setChannelNames(imageData, "DAPI", "Nestin", "NeuN") // change the string list to rename your channels
+    setChannelNames(imageData, *channelNames3)
 } else if (nChannels == 4) {
-    setChannelNames(imageData, "DAPI", "Cre", "Nestin", "NeuN") // change the string list to rename your channels
+    setChannelNames(imageData, *channelNames4)
 }

@@ -5,5 +5,9 @@
  * Any name that is null will be left unchanged (not recommended).
  */
 
+// ── Configuration ────────────────────────────────────────────────────────────
+def channelNames = ["DAPI", "488", "Cy3", "Cy5"]  // Change to match your channel names
+// ─────────────────────────────────────────────────────────────────────────────
+
 def imageData = getCurrentImageData()
-setChannelNames(imageData, "DAPI", "488", "Cy3", "Cy5") // change the string list to rename your channels
+setChannelNames(imageData, *channelNames)

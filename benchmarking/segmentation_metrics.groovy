@@ -168,7 +168,7 @@ class Result {
 // Show in action
  
 def target_objects = getAnnotationObjects().findAll{(it.getPathClass() == getPathClass("YOUR_TARGET_CLASS")) }
-def predicted_objects = getDetectionObjects().findAll {it.getPathClass() == getPathClass("YOUR_PREDICTION_CLASS")}
+def predicted_objects = getDetectionObjects().findAll {it.getPathClass() == getPathClass("YOUR_PREDICTED_CLASS")}
 
 println "Comparing ${target_objects.size()} targets vs ${predicted_objects.size()} predictions"
 

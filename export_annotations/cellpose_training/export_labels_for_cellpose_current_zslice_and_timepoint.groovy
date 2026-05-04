@@ -39,7 +39,7 @@ def instanceServer = new LabeledImageServer.Builder(imageData)
   .useInstanceLabels()
   .useFilter(p -> 
       p.isAnnotation() && 
-      p.getPathClass() == getPathClass('YOUR_CLASS') &&  // Filter by class
+      p.getPathClass() == getPathClass('YOUR_CLASS_NAME') &&  // Filter by class
       p.getROI().getImagePlane().getZ() == zSlice &&  // Filter by Z-plane
       p.getROI().getImagePlane().getT() == timepoint  // Filter by timepoint
   )

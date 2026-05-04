@@ -20,7 +20,7 @@ def instanceServer = new LabeledImageServer.Builder(imageData)
   .downsample(downsample)    // Choose server resolution; this should match the resolution at which tiles are exported
   .useAnnotations()
   .useInstanceLabels()
-  .useFilter(p -> p.isAnnotation() && p.getPathClass() == getPathClass('YOUR_CLASS'))
+  .useFilter(p -> p.isAnnotation() && p.getPathClass() == getPathClass('YOUR_CLASS_NAME'))
   .multichannelOutput(false) // If true, each label refers to the channel of a multichannel binary image (required for multiclass probability)
   .build()
   
