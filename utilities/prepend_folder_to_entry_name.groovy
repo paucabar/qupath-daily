@@ -1,5 +1,11 @@
 import qupath.lib.images.servers.ServerTools
 
+// ── Configuration ────────────────────────────────────────────────────────────
+// Strip ".tif" and anything after it from the image filename before renaming.
+// Adjust the regex below if your files use a different extension.
+def extensionPattern = /\.tif.*$/
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Get project & current image
 def project = getProject()
 def imageData = getCurrentImageData()
@@ -14,7 +20,7 @@ def parentFolderName = fileImage.getParentFile().getName()
 
 // Get image name without extension & trailing extra text
 def imageName = fileImage.getName()
-imageName = imageName.replaceFirst(/\.tif.*$/, "")  // Remove ".tif" and anything after
+imageName = imageName.replaceFirst(extensionPattern, "")
 
 // Build new name
 def newName = "${parentFolderName}_${imageName}"
