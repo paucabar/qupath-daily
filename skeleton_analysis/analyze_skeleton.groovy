@@ -169,6 +169,8 @@ for (annotation in annotations) {
         }
     }
 
+    ml.close()
+
     // Clear ResultsTable after each annotation to prevent data mixing
     try { rt.reset() } catch (Exception e) { print "Failed to reset ResultsTable: ${e}" }
 }

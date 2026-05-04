@@ -1,34 +1,22 @@
-import qupath.lib.gui.scripting.QPEx
-import qupath.lib.objects.PathDetectionObject
-import qupath.lib.roi.interfaces.ROI
+// ── Configuration ────────────────────────────────────────────────────────────
+def targetClassName       = "YOUR_TARGET_CLASS"  // class of detections to reclassify
+def circularityThreshold  = 0.5                  // detections below this threshold → "Positive"
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Define target class and thresholds
-def targetClass = "YOUR_TARGET_CLASS"
+def detections = getDetectionObjects().findAll { it.getPathClass()?.toString() == targetClassName }
 
-// Get all detections
-def detections = QPEx.getDetectionObjects()
+if (detections.isEmpty()) {
+    println "No detections found for class '${targetClassName}'"
+    return
+}
 
-// Store new detections
-def newDetections = []
-
-// Iterate through detections and classify
 detections.each { detection ->
-    if (detection.getPathClass()?.toString() == targetClass) {
-        def circularity = detection.getMeasurementList().getMeasurementValue("Circularity")
-        
-        if (circularity != null) {
-            def newClass = circularity < 0.5 ? "Positive" : "Negative"
-            def pathClass = getPathClass(newClass)
-            def newDetection = new PathDetectionObject(detection.getROI(), pathClass, detection.getMeasurementList())
-            newDetections.add(newDetection)
-        }
+    def circularity = detection.getMeasurementList().getMeasurementValue("Circularity")
+    if (circularity != null) {
+        def newClass = circularity < circularityThreshold ? "Positive" : "Negative"
+        detection.setPathClass(getPathClass(newClass))
     }
 }
 
-// Remove old detections
-QPEx.getCurrentHierarchy().removeObjects(detections, true)
-
-// Add new detections
-QPEx.getCurrentHierarchy().addObjects(newDetections)
-
+fireHierarchyUpdate()
 println "Reclassification complete!"

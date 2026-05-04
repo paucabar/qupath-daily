@@ -8,7 +8,7 @@
  * Usage:
  * - The script will apply the specified ImageJ thresholding method on the chosen channel,
  *   and create new annotation objects with class "THRESHOLDED_CLASS" that overlap with the target class.
- * - Edit "TARGET_CLASS", "IMAGEJ_THRESHOLD_METHOD" and "channel" as needed.
+ * - Edit "YOUR_TARGET_CLASS", "YOUR_THRESHOLD_METHOD" and "channel" as needed.
  * - Channel start by 1.
  * - Assumes a 2D image.
  */
@@ -54,13 +54,13 @@ def request = RegionRequest.createInstance(server, downsample)
 ImagePlus imp = IJTools.convertToImagePlus(server, request).getImage()
 
 // Get objects of interest
-def objectsOfInterest = getAnnotationObjects().findAll { it.getPathClass() == getPathClass("TARGET_CLASS") }
+def objectsOfInterest = getAnnotationObjects().findAll { it.getPathClass() == getPathClass("YOUR_TARGET_CLASS") }
 
 // Create semantic ROIs applying a threshold method
 int channel = 1 // Set the channel index (1-based)
 imp.setC(channel)
 ImageProcessor ip = imp.getProcessor()
-ip.setAutoThreshold("IMAGEJ_THRESHOLD_METHOD", true, ImageProcessor.NO_LUT_UPDATE)
+ip.setAutoThreshold("YOUR_THRESHOLD_METHOD", true, ImageProcessor.NO_LUT_UPDATE)
 int lowerThreshold = ip.getMinThreshold()  // Gets the calculated lower threshold value
 int upperThreshold = ip.getMaxThreshold()  // Gets the calculated upper threshold value
 
@@ -69,7 +69,7 @@ ip.setThreshold(lowerThreshold, upperThreshold, ImageProcessor.NO_LUT_UPDATE)
 def multipartRoi = SimpleThresholding.thresholdToROI(ip, request) // Generates a multi-part ROI including all positive pixels
 
 // Create the intersected objects
-getIntersectedObjects(objectsOfInterest, multipartRoi, "THRESHOLDED_CLASS")
+getIntersectedObjects(objectsOfInterest, multipartRoi, "YOUR_THRESHOLDED_CLASS")
 
 // Resolve hierarchy
 resolveHierarchy()

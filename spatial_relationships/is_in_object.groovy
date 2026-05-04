@@ -35,7 +35,9 @@ sourceAnnotations.each { source ->
             isInContainer = 1
     }
 
-    source.getMeasurementList().putMeasurement("In ${containerClassName} (bool)", isInContainer)
+    def ml = source.getMeasurementList()
+    ml.putMeasurement("In ${containerClassName} (bool)", isInContainer)
+    ml.close()
 }
 
 println "Done! Containment parameter added to ${sourceAnnotations.size()} ${sourceClassName} annotations."

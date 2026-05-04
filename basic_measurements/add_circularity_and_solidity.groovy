@@ -1,22 +1,23 @@
 import qupath.lib.roi.RoiTools
 
-// Find all annotations classified as "Mitochondria"
-parentAnnotations = getAnnotationObjects().findAll { it.getPathClass() == getPathClass("YOUR_CLASS_NAME") }
+// ── Configuration ────────────────────────────────────────────────────────────
+def targetClassName = "YOUR_CLASS_NAME"  // Change to the desired class
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Process each annotation
+def parentAnnotations = getAnnotationObjects().findAll { it.getPathClass() == getPathClass(targetClassName) }
+
 for (parent in parentAnnotations) {
     def roi = parent.getROI()
-    
     if (roi != null) {
-        def circularity = RoiTools.getCircularity(roi) // Calculate circularity
-        def solidity = roi.getSolidity() // Calculate solidity
+        def circularity = RoiTools.getCircularity(roi)
+        def solidity = roi.getSolidity()
 
-        // Add measurements to the annotation
-        parent.getMeasurementList().putMeasurement("Circularity", circularity)
-        parent.getMeasurementList().putMeasurement("Solidity", solidity)
+        def ml = parent.getMeasurementList()
+        ml.putMeasurement("Circularity", circularity)
+        ml.putMeasurement("Solidity", solidity)
+        ml.close()
     }
 }
 
-// Refresh the display
 fireHierarchyUpdate()
-println("Added Circularity and Solidity measurements to 'Mitochondria' annotations.")
+println "Added Circularity and Solidity measurements to ${parentAnnotations.size()} annotations."

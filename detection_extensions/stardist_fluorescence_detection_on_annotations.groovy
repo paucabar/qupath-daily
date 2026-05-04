@@ -1,5 +1,4 @@
 import qupath.ext.stardist.StarDist2D
-import qupath.lib.scripting.QP
 
 // IMPORTANT! Replace this with the path to your StarDist model
 // that takes a single channel as input (e.g. dsb2018_heavy_augment.pb)
@@ -27,9 +26,9 @@ def stardist = StarDist2D
 def pathObjects = getAnnotationObjects().findAll{(it.getPathClass() == getPathClass("YOUR_TARGET_CLASS")) }
 
 // Run detection for the selected objects
-def imageData = QP.getCurrentImageData()
+def imageData = getCurrentImageData()
 if (pathObjects.isEmpty()) {
-    QP.getLogger().error("No parent objects are selected!")
+    println "ERROR: No parent objects are selected!"
     return
 }
 stardist.detectObjects(imageData, pathObjects)

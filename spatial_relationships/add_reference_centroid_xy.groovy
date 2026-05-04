@@ -1,38 +1,36 @@
 /**
- * For a target annotation class adds the coordinates to a reference object
- * Only works if n reference object == 1
+ * Adds centroid coordinates of a reference object to each target annotation.
+ * Requires exactly one reference object to be present.
  */
+
+// ── Configuration ────────────────────────────────────────────────────────────
+def targetClassName    = "YOUR_TARGET_CLASS"     // class to add coordinates to
+def referenceClassName = "YOUR_REFERENCE_CLASS"  // class acting as reference (must have exactly 1 instance)
+// ─────────────────────────────────────────────────────────────────────────────
 
 def imageData = getCurrentImageData()
 def hierarchy = imageData.getHierarchy()
 def cal = imageData.getServer().getPixelCalibration()
 
-// Find mitochondria and nucleus annotations
-def mitochondriaObjects = hierarchy.getAnnotationObjects().findAll { it.getPathClass() == getPathClass("TARGET_CLASS_NAME") }
-def nucleusObjects = hierarchy.getAnnotationObjects().findAll { it.getPathClass() == getPathClass("REFERENCE_CLASS_NAME") }
+def targetObjects    = hierarchy.getAnnotationObjects().findAll { it.getPathClass() == getPathClass(targetClassName) }
+def referenceObjects = hierarchy.getAnnotationObjects().findAll { it.getPathClass() == getPathClass(referenceClassName) }
 
-if (nucleusObjects.size() == 1) {
-    def nucleus = nucleusObjects[0]
-    def roi = nucleus.getROI()
+if (referenceObjects.size() == 1) {
+    def roi = referenceObjects[0].getROI()
+    def referenceX = roi.getCentroidX() * cal.getPixelWidthMicrons()
+    def referenceY = roi.getCentroidY() * cal.getPixelHeightMicrons()
 
-    // Get centroid in pixels
-    def centroidX_px = roi.getCentroidX()
-    def centroidY_px = roi.getCentroidY()
-
-    // Convert to microns using calibration
-    def nucleusX = centroidX_px * cal.getPixelWidthMicrons()
-    def nucleusY = centroidY_px * cal.getPixelHeightMicrons()
-
-    // Add nucleus centroid to each mitochondria annotation
-    mitochondriaObjects.each { mito ->
-        mito.getMeasurementList().putMeasurement("Centroid X µm (RefObject)", nucleusX)
-        mito.getMeasurementList().putMeasurement("Centroid Y µm (RefObject)", nucleusY)
+    targetObjects.each { target ->
+        def ml = target.getMeasurementList()
+        ml.putMeasurement("Centroid X µm (RefObject)", referenceX)
+        ml.putMeasurement("Centroid Y µm (RefObject)", referenceY)
+        ml.close()
     }
 
-    println 'Added calibrated nucleus centroid coordinates to mitochondria objects.'
+    println "Added reference centroid coordinates to ${targetObjects.size()} ${targetClassName} objects."
 
-} else if (nucleusObjects.size() > 1) {
-    println 'Multiple nucleus annotations found — this script only supports one.'
+} else if (referenceObjects.size() > 1) {
+    println "Multiple ${referenceClassName} annotations found — this script only supports one."
 } else {
-    println 'No nucleus annotation found.'
+    println "No ${referenceClassName} annotation found."
 }

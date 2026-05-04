@@ -3,7 +3,6 @@
  */
 
 import qupath.ext.stardist.StarDist2D
-import qupath.lib.scripting.QP
 
 // IMPORTANT! Replace this with the path to your StarDist model
 // that takes a single channel as input (e.g. dsb2018_heavy_augment.pb)
@@ -34,7 +33,7 @@ def imageData = getCurrentImageData()
 def pathObjects = getSelectedObjects() // To process only selected annotations, useful while testing
 //def pathObjects = getAnnotationObjects() // To process all annotations. For working in batch mode
 if (pathObjects.isEmpty()) {
-    QP.getLogger().error("No parent objects are selected!")
+    println "ERROR: No parent objects are selected!"
     return
 }
 
