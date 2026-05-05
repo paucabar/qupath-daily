@@ -27,7 +27,7 @@ Scripts for classifying objects based on morphology or other measurements.
 
 ### **detection_extensions/**
 Scripts for cell detection using external models and extensions (e.g., StarDist, Cellpose).
-- `cpsam_detection_live_cell_imaging.groovy`
+- `cpsam_detection_live_cell_imaging.groovy` — **Requires QuPath 0.5.0 + qupath-extension-cellpose 0.9.3.** In QuPath 0.7.0, the extension does not correctly use the timepoint from the annotation ROI when exporting image tiles, causing all frames to be detected using frame 0 data. This is a known regression; do not run this script in QuPath 0.7.0 until a fix is confirmed.
 - `stardist_fluorescence_cell_detection.groovy`
 - `stardist_fluorescence_cell_detection_with_preprocessing.groovy`
 - `stardist_fluorescence_detection_on_annotations.groovy`
