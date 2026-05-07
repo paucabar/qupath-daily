@@ -25,6 +25,23 @@ Scripts for generating and analyzing cell objects.
 Scripts for classifying objects based on morphology or other measurements.
 - `classify_detections_shape_vs_round.groovy`
 
+### **cpsam_training/**
+Python toolkit for fine-tuning CellPose-SAM on custom annotated data. Unlike the Groovy scripts, this is used outside QuPath in a terminal or Jupyter notebook.
+
+Copy the `training_template/` folder to your experiment project directory, then follow the workflow in the notebook or the script docstrings:
+
+1. Export annotated pairs from QuPath using `export_annotations/cellpose_training/`
+2. Place exported `_img.tif` / `_mask.tif` pairs in `data/` (flat or one subfolder per dataset)
+3. Run `python split_data.py data/` to generate `data/splits/train/` and `data/splits/test/`
+4. Train via notebook (`train_cpsam.ipynb`) or CLI (`python train_cpsam.py --model_name <name>`)
+5. The trained model is saved to `models/<model_name>` inside your copied folder
+
+Requires the `cpsam` conda environment.
+
+- `training_template/split_data.py` — creates reproducible train/test/eval splits; auto-detects flat or multi-dataset layout
+- `training_template/train_cpsam.ipynb` — step-by-step notebook with inline loss plot
+- `training_template/train_cpsam.py` — CLI equivalent; saves loss curve as PNG and CSV
+
 ### **detection_extensions/**
 Scripts for cell detection using external models and extensions (e.g., StarDist, Cellpose).
 - `cpsam_detection_live_cell_imaging.groovy` — **Requires QuPath 0.5.0 + qupath-extension-cellpose 0.9.3.** In QuPath 0.7.0, the extension does not correctly use the timepoint from the annotation ROI when exporting image tiles, causing all frames to be detected using frame 0 data. This is a known regression; do not run this script in QuPath 0.7.0 until a fix is confirmed.

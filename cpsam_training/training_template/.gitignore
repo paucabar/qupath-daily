@@ -1,0 +1,5 @@
+# Ignore training data, splits, and trained models — these are experiment-specific
+data/*
+!data/.gitkeep
+models/*
+!models/.gitkeep
