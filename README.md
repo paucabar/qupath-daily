@@ -10,7 +10,7 @@ A collection of [QuPath](https://qupath.github.io/) Groovy scripts used for dail
 Scripts for calculating or cleaning object measurements.
 - `add_circularity_and_solidity.groovy`
 - `add_intensity_measurements.groovy`
-- `add_shape_measurements_script.groovy`
+- `add_shape_measurements.groovy`
 - `clean_measurement_list.groovy`
 
 ### **benchmarking/**
@@ -43,25 +43,30 @@ Requires the `cpsam` conda environment.
 - `training_template/train_cpsam.py` — CLI equivalent; saves loss curve as PNG and CSV
 
 ### **detection_extensions/**
-Scripts for cell detection using external models and extensions (e.g., StarDist, Cellpose).
+Scripts for cell detection using external models and extensions (e.g., StarDist, Cellpose, ImageJ).
 - `cpsam_detection_live_cell_imaging.groovy` — **Requires QuPath 0.5.0 + qupath-extension-cellpose 0.9.3.** In QuPath 0.7.0, the extension does not correctly use the timepoint from the annotation ROI when exporting image tiles, causing all frames to be detected using frame 0 data. This is a known regression; do not run this script in QuPath 0.7.0 until a fix is confirmed.
+- `imagej_threshold_detection_on_annotations.groovy` — creates threshold-based annotation objects using an ImageJ threshold method, keeping only regions overlapping with target annotations
 - `stardist_fluorescence_cell_detection.groovy`
 - `stardist_fluorescence_cell_detection_with_preprocessing.groovy`
+- `stardist_fluorescence_cell_detection_zstack.groovy`
 - `stardist_fluorescence_detection_on_annotations.groovy`
 
 ### **export_annotations/**
 Scripts for exporting annotations, masks, or training labels.
 
-- **axonwrap_training/**
-  - `export_labels_for_axonwrap.groovy`
 - **cellpose_training/**
   - `export_labels_for_cellpose.groovy`
+  - `export_labels_for_cellpose_all_zslices_and_timepoints.groovy`
   - `export_labels_for_cellpose_current_zslice_and_timepoint.groovy`
 - **geojson/**
   - `export_geojson.groovy`
 - **individualized_annotations/**
   - `export_binary_mask_bounding_boxes.groovy`
   - `export_binary_mask_multichannel.groovy`
+
+### **name_and_format_utilities/**
+Scripts for renaming or reformatting project entries.
+- `rename_project_images.groovy` — renames project entries by combining the parent folder name and filename, stripping the file extension and a configurable suffix
 
 ### **skeleton_analysis/**
 Scripts for analyzing skeletonized structures via ImageJ.
@@ -75,27 +80,51 @@ Scripts for computing distances, relationships, or reference-based measurements.
 
 ### **utilities/**
 General-purpose helper scripts for managing channels, annotations, or calibration.
+- `annotations_to_detections.groovy`
 - `change_channel_names.groovy`
+- `change_channel_names_nchannel_variable.groovy` — sets channel names for images with either 3 or 4 channels
 - `detections_to_annotations.groovy`
 - `fill_annotations.groovy`
+- `prepend_folder_to_entry_name.groovy` — prepends the parent folder name to each project entry name
 - `remove_annotations.groovy`
+- `remove_annotations_at_image_boundaries.groovy` — removes objects whose ROIs touch or are within a set distance of an annotation boundary
 - `remove_detections.groovy`
 - `set_pixel_calibration.groovy`
+- `set_project_classes.groovy` — sets the available classification classes for the project
 
 ---
 
 ## Usage
 
-These scripts can be run directly within **QuPath’s Script Editor**:
+These scripts can be run directly within **QuPath's Script Editor**:
 
 1. Open QuPath → `Automate → Show script editor`
 2. Load the desired `.groovy` file.
-3. Adjust any parameters.
-4. Run (`Ctrl/Cmd + R`) or Run for project.
+3. Adjust the parameters in the configuration block at the top of the script.
+4. Run (`Ctrl/Cmd + R`) or `Run for project`.
+
+### Configuration convention
+
+All scripts expose their parameters in a clearly marked block at the top:
+
+```groovy
+// ── Configuration ────────────────────────────────────────────────────────────
+def targetClassName = "YOUR_CLASS_NAME"  // class name, null (all), or "" (unclassified)
+// ─────────────────────────────────────────────────────────────────────────────
+```
+
+For scripts that filter by annotation class, `targetClassName` accepts three forms:
+
+| Value | Behaviour |
+|---|---|
+| `"ClassName"` | objects of that class only |
+| `null` | all objects, regardless of class |
+| `""` | unclassified objects only |
+
+Detection scripts (StarDist, Cellpose) follow their own parameter convention and are not covered by this pattern.
 
 ---
 
-
 ## Acknowledgments
 
-These scripts build upon the QuPath scripting API and community examples.  
+These scripts build upon the QuPath scripting API and community examples.
