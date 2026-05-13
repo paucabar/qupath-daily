@@ -1,60 +1,71 @@
 import qupath.lib.regions.RegionRequest
 
+// ── Configuration ────────────────────────────────────────────────────────────
+def targetClassName = "YOUR_CLASS_NAME"  // class name, null (all), or "" (unclassified)
+double downsample   = 1.0
+// ─────────────────────────────────────────────────────────────────────────────
+
 def imageData = getCurrentImageData()
 def hierarchy = imageData.getHierarchy()
 
-// Create output path (relative to project)
 def outputDir = buildFilePath(PROJECT_BASE_DIR, 'export_cellpose')
 mkdirs(outputDir)
 
-// Create output subfolders
 def instanceDir = buildFilePath(outputDir, 'labels')
 mkdirs(instanceDir)
 def imageDir = buildFilePath(outputDir, 'images')
 mkdirs(imageDir)
 
-// Define how much to downsample during export
-double downsample = 1
-
-// Create an ImageServer where raw images are downsampled
 def server = imageData.getServer()
-def width = server.getWidth()
-def height = server.getHeight()
+def width       = server.getWidth()
+def height      = server.getHeight()
 def nTimepoints = server.nTimepoints()
-def nSlices = server.nZSlices()
+def nSlices     = server.nZSlices()
 
-// Loop over all zSlices and timepoints
+def name = GeneralTools.getNameWithoutExtension(imageData.getServer().getMetadata().getName())
+
 for (timepoint = 0; timepoint < nTimepoints; timepoint++) {
     for (zSlice = 0; zSlice < nSlices; zSlice++) {
-        // Export images and labels
         println "Timepoint: $timepoint, Z-slice: $zSlice"
-        // Define a RegionRequest for the current frame
+
         def region = RegionRequest.createInstance(server.getPath(), downsample, 0, 0, width, height, zSlice, timepoint)
-        
-        // Create an ImageServer for fibre instances (filtered by Z & T)
-        def instanceServer = new LabeledImageServer.Builder(imageData)
-          .backgroundLabel(0, ColorTools.BLACK) // Specify background label (usually 0 or 255)
-          .downsample(downsample) // Choose server resolution; this should match the resolution at which tiles are exported
-          .useAnnotations()
-          .useInstanceLabels()
-          .useFilter(p -> 
-              p.isAnnotation() && 
-              p.getPathClass() == getPathClass('YOUR_CLASS_NAME') &&  // Filter by class
-              p.getROI().getImagePlane().getZ() == zSlice &&  // Filter by Z-plane
-              p.getROI().getImagePlane().getT() == timepoint  // Filter by timepoint
-          )
-          .multichannelOutput(false) // If true, each label refers to the channel of a multichannel binary image (required for multiclass probability)
-          .build()
-        
-        // Get image name to export annotations
-        def name = GeneralTools.getNameWithoutExtension(imageData.getServer().getMetadata().getName())
-        
-        // Define export paths
-        def pathInstance = buildFilePath(instanceDir, name + "_slice${zSlice}_frame${timepoint}_mask.tif") // Define instance output file paths
-        def pathImage = buildFilePath(imageDir, name + "_slice${zSlice}_frame${timepoint}_img.tif") // Define image output file path
-        
-        // Write the images (Ensures only the current frame is exported)
-        writeImageRegion(instanceServer, region, pathInstance) // Export annotations only for current frame
-        writeImageRegion(server, region, pathImage) // Export raw image only for current frame
+
+        def instanceBuilder = new LabeledImageServer.Builder(imageData)
+            .backgroundLabel(0, ColorTools.BLACK)
+            .downsample(downsample)
+            .useAnnotations()
+            .useInstanceLabels()
+            .multichannelOutput(false)
+
+        if (targetClassName == "")
+            instanceBuilder.useFilter(p ->
+                p.isAnnotation() &&
+                p.getPathClass() == null &&
+                p.getROI().getImagePlane().getZ() == zSlice &&
+                p.getROI().getImagePlane().getT() == timepoint
+            )
+        else if (targetClassName != null)
+            instanceBuilder.useFilter(p ->
+                p.isAnnotation() &&
+                p.getPathClass() == getPathClass(targetClassName) &&
+                p.getROI().getImagePlane().getZ() == zSlice &&
+                p.getROI().getImagePlane().getT() == timepoint
+            )
+        else
+            instanceBuilder.useFilter(p ->
+                p.isAnnotation() &&
+                p.getROI().getImagePlane().getZ() == zSlice &&
+                p.getROI().getImagePlane().getT() == timepoint
+            )
+
+        def instanceServer = instanceBuilder.build()
+
+        def pathInstance = buildFilePath(instanceDir, name + "_slice${zSlice}_frame${timepoint}_mask.tif")
+        def pathImage    = buildFilePath(imageDir,    name + "_slice${zSlice}_frame${timepoint}_img.tif")
+
+        writeImageRegion(instanceServer, region, pathInstance)
+        writeImageRegion(server, region, pathImage)
     }
 }
+
+println "Export complete."

@@ -41,7 +41,7 @@ sourceAnnotations.each { source ->
 
     def distanceCalibrated = minDistance * pixelSize
     def ml = source.getMeasurementList()
-    ml.putMeasurement("Distance to nearest ${targetClassName} (${unit})", distanceCalibrated)
+    ml.put("Distance to nearest ${targetClassName} (${unit})", distanceCalibrated as double)
     ml.close()
 }
 

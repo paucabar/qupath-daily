@@ -1,4 +1,15 @@
-// Remove all detections classified as NSC
+// ── Configuration ────────────────────────────────────────────────────────────
+def targetClassName = "YOUR_CLASS_NAME"  // class name, null (all), or "" (unclassified)
+// ─────────────────────────────────────────────────────────────────────────────
 
-annotations = getCurrentImageData().getHierarchy().getAnnotationObjects()
-removeObjects(annotations.findAll { it.getPathClass() == getPathClass("YOUR_CLASS_NAME") }, true)
+def annotations
+if (targetClassName == null)
+    annotations = getAnnotationObjects()
+else if (targetClassName == "")
+    annotations = getAnnotationObjects().findAll { it.getPathClass() == null }
+else
+    annotations = getAnnotationObjects().findAll { it.getPathClass() == getPathClass(targetClassName) }
+
+removeObjects(annotations, true)
+
+println "Removed ${annotations.size()} annotations."

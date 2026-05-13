@@ -1,10 +1,16 @@
 import qupath.lib.roi.RoiTools
 
 // ── Configuration ────────────────────────────────────────────────────────────
-def targetClassName = "YOUR_CLASS_NAME"  // Change to the desired class
+def targetClassName = "YOUR_CLASS_NAME"  // class name, null (all), or "" (unclassified)
 // ─────────────────────────────────────────────────────────────────────────────
 
-def parentAnnotations = getAnnotationObjects().findAll { it.getPathClass() == getPathClass(targetClassName) }
+def parentAnnotations
+if (targetClassName == null)
+    parentAnnotations = getAnnotationObjects()
+else if (targetClassName == "")
+    parentAnnotations = getAnnotationObjects().findAll { it.getPathClass() == null }
+else
+    parentAnnotations = getAnnotationObjects().findAll { it.getPathClass() == getPathClass(targetClassName) }
 
 for (parent in parentAnnotations) {
     def roi = parent.getROI()
@@ -13,8 +19,8 @@ for (parent in parentAnnotations) {
         def solidity = roi.getSolidity()
 
         def ml = parent.getMeasurementList()
-        ml.putMeasurement("Circularity", circularity)
-        ml.putMeasurement("Solidity", solidity)
+        ml.put("Circularity", circularity as double)
+        ml.put("Solidity", solidity as double)
         ml.close()
     }
 }

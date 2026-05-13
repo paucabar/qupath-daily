@@ -36,7 +36,7 @@ sourceAnnotations.each { source ->
     }
 
     def ml = source.getMeasurementList()
-    ml.putMeasurement("In ${containerClassName} (bool)", isInContainer)
+    ml.put("In ${containerClassName} (bool)", isInContainer as double)
     ml.close()
 }
 

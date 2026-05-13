@@ -1,29 +1,46 @@
 import qupath.lib.images.servers.LabeledImageServer
 
-def imageData = getCurrentImageData()
+// ── Configuration ────────────────────────────────────────────────────────────
+def targetClassName = ""    // class name, null (all), or "" (unclassified)
+double downsample   = 1.0
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Define output path (relative to project)
+def imageData = getCurrentImageData()
 def name = GeneralTools.getNameWithoutExtension(imageData.getServer().getMetadata().getName())
+
 def pathOutput = buildFilePath(PROJECT_BASE_DIR, 'export_bbs')
 mkdirs(pathOutput)
 
-double downsample = 1
+def selectedAnnotations
+if (targetClassName == null)
+    selectedAnnotations = getAnnotationObjects()
+else if (targetClassName == "")
+    selectedAnnotations = getAnnotationObjects().findAll { it.getPathClass() == null }
+else
+    selectedAnnotations = getAnnotationObjects().findAll { it.getPathClass() == getPathClass(targetClassName) }
 
-// Create an ImageServer where the pixels are derived from annotations
-def labelServer = new LabeledImageServer.Builder(imageData)
-    .backgroundLabel(0, ColorTools.WHITE) // Specify background label (usually 0 or 255)
-    .downsample(downsample)    // Choose server resolution; this should match the resolution at which tiles are exported
-    .addUnclassifiedLabel(255)      // Choose objects with no class name
-    .multichannelOutput(false) // If true, each label refers to the channel of a multichannel binary image (required for multiclass probability)
-    .build()
+def builder = new LabeledImageServer.Builder(imageData)
+    .backgroundLabel(0, ColorTools.WHITE)
+    .downsample(downsample)
+    .multichannelOutput(false)
 
+if (targetClassName == null) {
+    selectedAnnotations.collect { it.getPathClass() }.unique().each { pc ->
+        if (pc == null) builder.addUnclassifiedLabel(255)
+        else builder.addLabel(pc, 255)
+    }
+} else if (targetClassName == "") {
+    builder.addUnclassifiedLabel(255)
+} else {
+    builder.addLabel(getPathClass(targetClassName), 255)
+}
 
-// Export each region
-int i = 0
-for (annotation in getAnnotationObjects().findAll {it.getPathClass() == null}) {
-    def region = RegionRequest.createInstance(
-        labelServer.getPath(), downsample, annotation.getROI())
-    i++
-    def outputPath = buildFilePath(pathOutput, name + '_Region_' + i + '.tif')
+def labelServer = builder.build()
+
+selectedAnnotations.eachWithIndex { annotation, i ->
+    def region = RegionRequest.createInstance(labelServer.getPath(), downsample, annotation.getROI())
+    def outputPath = buildFilePath(pathOutput, name + '_Region_' + (i + 1) + '.tif')
     writeImageRegion(labelServer, region, outputPath)
 }
+
+println "Exported ${selectedAnnotations.size()} annotation masks to 'export_bbs'."

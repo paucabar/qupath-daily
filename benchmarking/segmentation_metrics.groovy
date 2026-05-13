@@ -1,6 +1,11 @@
 import org.locationtech.jts.geom.Geometry
 import qupath.lib.gui.scripting.QPEx.*
 
+// ── Configuration ────────────────────────────────────────────────────────────
+def targetClassName    = "YOUR_TARGET_CLASS"     // class of ground-truth annotation objects
+def predictedClassName = "YOUR_PREDICTED_CLASS"  // class of predicted detection objects
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Method to compute results
 
 // Method to compute the segmentation metrics and the split and merge events.
@@ -167,8 +172,8 @@ class Result {
 
 // Show in action
  
-def target_objects = getAnnotationObjects().findAll{(it.getPathClass() == getPathClass("YOUR_TARGET_CLASS")) }
-def predicted_objects = getDetectionObjects().findAll {it.getPathClass() == getPathClass("YOUR_PREDICTED_CLASS")}
+def target_objects    = getAnnotationObjects().findAll { it.getPathClass() == getPathClass(targetClassName) }
+def predicted_objects = getDetectionObjects().findAll  { it.getPathClass() == getPathClass(predictedClassName) }
 
 println "Comparing ${target_objects.size()} targets vs ${predicted_objects.size()} predictions"
 

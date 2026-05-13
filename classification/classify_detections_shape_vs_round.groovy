@@ -11,8 +11,8 @@ if (detections.isEmpty()) {
 }
 
 detections.each { detection ->
-    def circularity = detection.getMeasurementList().getMeasurementValue("Circularity")
-    if (circularity != null) {
+    def circularity = detection.getMeasurementList().get("Circularity")
+    if (!Double.isNaN(circularity)) {
         def newClass = circularity < circularityThreshold ? "Positive" : "Negative"
         detection.setPathClass(getPathClass(newClass))
     }

@@ -3,22 +3,28 @@ import qupath.lib.roi.interfaces.ROI
 import qupath.lib.roi.RoiTools
 import static qupath.lib.gui.scripting.QPEx.*
 
+// ── Configuration ────────────────────────────────────────────────────────────
+def targetClassName = null  // class name, null (all), or "" (unclassified)
+// ─────────────────────────────────────────────────────────────────────────────
+
 RoiTools rt = new RoiTools()
 
-def annotationsToFill = getAnnotationObjects()
+def annotationsToFill
+if (targetClassName == null)
+    annotationsToFill = getAnnotationObjects()
+else if (targetClassName == "")
+    annotationsToFill = getAnnotationObjects().findAll { it.getPathClass() == null }
+else
+    annotationsToFill = getAnnotationObjects().findAll { it.getPathClass() == getPathClass(targetClassName) }
+
 removeObjects(annotationsToFill, true)
 
-def pathFilledAnnotations = annotationsToFill.collect { annotation ->
+def filledAnnotations = annotationsToFill.collect { annotation ->
     ROI roi = annotation.getROI()
-    if (roi.getRoiName() != "Rectangle") {
-        filled_roi = rt.fillHoles(roi)
-    } else {
-        filled_roi = roi
-    }
-    def filledAnnotation = PathObjects.createAnnotationObject(filled_roi, annotation.getPathClass())
-    return filledAnnotation
+    def filledRoi = (roi.getRoiName() != "Rectangle") ? rt.fillHoles(roi) : roi
+    PathObjects.createAnnotationObject(filledRoi, annotation.getPathClass())
 }
-addObjects(pathFilledAnnotations)
+addObjects(filledAnnotations)
 
 fireHierarchyUpdate()
-print("Conversion done!")
+println "Filled holes in ${filledAnnotations.size()} annotations."

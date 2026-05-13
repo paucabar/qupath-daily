@@ -1,4 +1,3 @@
-
 /**
  * Remove detections that have ROIs that touch the border of any annotation ROI.
  *
@@ -20,39 +19,43 @@ import java.util.stream.Collectors
 
 import static qupath.lib.gui.scripting.QPEx.*
 
-// Define the distance in pixels from an annotation boundary
-// Zero is a valid option for 'touching'
-double distancePixels = 1.0
-
-// Toggle whether to use the 'hierarchy' rule, i.e. only consider detections with centroids inside an annotation
-boolean useHierarchyRule = true
+// ── Configuration ────────────────────────────────────────────────────────────
+def targetClassName      = "YOUR_CLASS_NAME"  // class name, null (all), or "" (unclassified)
+double distancePixels    = 1.0                // minimum distance in pixels from annotation boundary (0 = touching)
+boolean useHierarchyRule = true               // if true, only consider detections with centroids inside an annotation
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Use this to exclude objects touching the image borders
- * Annotations of an specific class are converted into detections
- * A full image annotation is created
+ * Use this to exclude objects touching the image borders.
+ * Annotations of a specific class are converted into detections,
+ * a full image annotation is created, boundary detections are removed,
+ * then the remaining detections are converted back to annotations.
  * NOTE 1: make sure no other annotations have been created
  * NOTE 2: if your objects are already detections, skip the conversion step
  */
 
 // Convert annotations to detections
-def yourClass = getPathClass('YOUR_CLASS_NAME') // Get the path class
-def annotationsAll = getAnnotationObjects() // Get all annotation objects
-def annotationsByClass = annotationsAll.findAll { it.getPathClass() == yourClass } // Filter the annotations by class
+def annotationsByClass
+if (targetClassName == null)
+    annotationsByClass = getAnnotationObjects()
+else if (targetClassName == "")
+    annotationsByClass = getAnnotationObjects().findAll { it.getPathClass() == null }
+else
+    annotationsByClass = getAnnotationObjects().findAll { it.getPathClass() == getPathClass(targetClassName) }
+
 def newDetections = annotationsByClass.collect {
-    it.setPathClass(yourClass)
-    return PathObjects.createDetectionObject(it.getROI(), it.getPathClass())
+    PathObjects.createDetectionObject(it.getROI(), it.getPathClass())
 }
 
 removeObjects(annotationsByClass, true)
 addObjects(newDetections)
 
-// create full image annotation
+// Create full image annotation
 createFullImageAnnotation(true)
 
 /**
  * From this point, it corresponds to Pete's regular script
- * to remove detections touching annotations edges
+ * to remove detections touching annotations edges:
  * https://gist.github.com/petebankhead/aac937b112724ab1626b020b6cca87b4
  */
 
@@ -65,13 +68,13 @@ def toRemove = new HashSet<PathObject>()
 for (def annotation in annotations) {
     def roi = annotation.getROI()
     if (roi == null)
-        continue // Shouldn't actually happen...
+        continue
     Collection<? extends PathObject> detections
     if (useHierarchyRule)
         // Warning! This decides based upon centroids (the 'normal' hierarchy rule)
         detections = hierarchy.getObjectsForRegion(PathDetectionObject.class, ImageRegion.createInstance(roi), null)
     else
-        // This uses bounding boxes (the 'normal' hierarchy rule)
+        // This uses bounding boxes
         detections = hierarchy.getObjectsForROI(PathDetectionObject.class, roi)
     // We need to get separate line strings for each polygon (since otherwise we get distances of zero when inside)
     def geometry = roi.getGeometry()
@@ -83,24 +86,22 @@ for (def annotation in annotations) {
         )
     }
 }
-println "Removing ${toRemove.size()} detections without ${distancePixels} pixels of an annotation boundary"
+println "Removing ${toRemove.size()} detections within ${distancePixels} pixels of an annotation boundary"
 hierarchy.removeObjects(toRemove, true)
 
 /**
  * Now the full image annotation is removed
- * and the remaining detections are converted
- * back into annotations
+ * and the remaining detections are converted back into annotations.
  */
- 
- // Clear full image annotation
-def fullImageAnnotation = getAnnotationObjects().findAll{ it.getPathClass() == null }
-removeObjects(fullImageAnnotation , true)
 
-// convert detections to annotations
+// Clear full image annotation
+def fullImageAnnotation = getAnnotationObjects().findAll { it.getPathClass() == null }
+removeObjects(fullImageAnnotation, true)
+
+// Convert detections back to annotations
 def detectionsFinal = getDetectionObjects()
 def newAnnotations = detectionsFinal.collect {
-    it.setPathClass(yourClass )
-    return PathObjects.createAnnotationObject(it.getROI(), it.getPathClass())
+    PathObjects.createAnnotationObject(it.getROI(), it.getPathClass())
 }
 
 removeObjects(detectionsFinal, true)

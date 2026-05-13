@@ -6,11 +6,12 @@ import ij.process.ColorProcessor
 import ij.process.ImageProcessor
 
 // ── Configuration ────────────────────────────────────────────────────────────
-def targetClassName = "YOUR_CLASS_NAME"
-def minAreaPixels   = 50                // annotations smaller than this are skipped
+def targetClassName  = "YOUR_CLASS_NAME"
+def minAreaPixels    = 50                // annotations smaller than this are skipped
+def minBranchLength  = 3.0              // leaf branches shorter than this (pixels) are pruned
 // Indices of annotations to show as 2-slice ImageJ stacks (mask | skeleton).
 // Set to an empty list [] to disable. Change to e.g. [0,1,6,11] to inspect those.
-def debugIndices    = [] as Set
+def debugIndices     = [] as Set
 // ─────────────────────────────────────────────────────────────────────────────
 
 def annotations = getAnnotationObjects().findAll { it.getPathClass()?.toString() == targetClassName }
@@ -156,11 +157,37 @@ annotations.eachWithIndex { annotation, idx ->
         }
     }
 
+    // Second pass: merge junction clusters connected by a slab-pixel bridge.
+    // Any non-junction skeleton pixel adjacent to junction pixels of two different
+    // clusters is a bridge; collapse both clusters into one so the slab path
+    // between them is not recorded as a branch.
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            if (skelBp.get(x, y) == 0 || isJunction[y * w + x]) continue
+            int clusterA = -1
+            for (int i = 0; i < 8; i++) {
+                int nx = x + KDX[i], ny = y + KDY[i]
+                if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue
+                int c = jCluster[ny * w + nx]
+                if (c < 0) continue
+                if (clusterA < 0) { clusterA = c; continue }
+                if (c != clusterA) {
+                    int cOld = c, cNew = clusterA
+                    for (int k = 0; k < w * h; k++)
+                        if (jCluster[k] == cOld) jCluster[k] = cNew
+                }
+            }
+        }
+    }
+
     // ── Traverse branches ─────────────────────────────────────────────────────
     // Walk from each node along slab pixels until reaching another node.
-    // Slab pixels are marked used as they are visited, preventing double-counting.
-    boolean[]    used     = new boolean[w * h]
-    List<Double> bLengths = []
+    // Node IDs: endpoint pixel at (x,y) → y*w+x  (< w*h)
+    //           junction cluster c       → w*h+c  (≥ w*h)
+    boolean[]    used        = new boolean[w * h]
+    List<int[]>  brEdges     = []   // [nodeId1, nodeId2] per branch
+    List<Double> bLengths    = []   // branch length (parallel to brEdges)
+    List<Double> loopLengths = []   // isolated loop circumferences (no node endpoints)
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
@@ -175,6 +202,9 @@ annotations.eachWithIndex { annotation, idx ->
                 if (isNode[ay * w + ax]) {
                     // Skip edges between junction pixels in the same cluster
                     if (isJunction[y * w + x] && isJunction[ay * w + ax] && jCluster[y * w + x] == jCluster[ay * w + ax]) continue
+                    int nid1 = isJunction[y * w + x]   ? w * h + jCluster[y * w + x]   : y * w + x
+                    int nid2 = isJunction[ay * w + ax] ? w * h + jCluster[ay * w + ax] : ay * w + ax
+                    brEdges << ([nid1, nid2] as int[])
                     bLengths << KW[i]
                     // Prevent same-cluster siblings from also counting this endpoint
                     if (isJunction[y * w + x] && !isJunction[ay * w + ax]) used[ay * w + ax] = true
@@ -203,7 +233,14 @@ annotations.eachWithIndex { annotation, idx ->
                     }
                     if (!stepped) break
                 }
-                if (isNode[cy * w + cx]) bLengths << len
+                if (isNode[cy * w + cx]) {
+                    int nid1 = isJunction[y * w + x]    ? w * h + jCluster[y * w + x]    : y * w + x
+                    int nid2 = isJunction[cy * w + cx] ? w * h + jCluster[cy * w + cx] : cy * w + cx
+                    if (nid1 != nid2) {   // skip slab paths within a merged cluster
+                        brEdges << ([nid1, nid2] as int[])
+                        bLengths << len
+                    }
+                }
             }
         }
     }
@@ -228,13 +265,115 @@ annotations.eachWithIndex { annotation, idx ->
                     break
                 }
             }
-            if (len > 0) bLengths << len
+            if (len > 0) loopLengths << len
         }
     }
 
-    int    nBranches = bLengths.size()
-    double avgLen    = nBranches > 0 ? bLengths.sum() / nBranches : 0.0
-    double maxLen    = nBranches > 0 ? bLengths.max()             : 0.0
+    // ── Prune short leaf branches ─────────────────────────────────────────────
+    // Build a degree map. Iteratively remove branches shorter than minBranchLength
+    // that terminate at an original endpoint pixel (node ID < w*h). Junction clusters
+    // are never removed, even if their degree falls to 1 after pruning.
+    Map<Integer, Integer> degree = [:]
+    brEdges.each { e ->
+        degree[e[0]] = (degree[e[0]] ?: 0) + 1
+        degree[e[1]] = (degree[e[1]] ?: 0) + 1
+    }
+    boolean[] prunedEdge = new boolean[brEdges.size()]
+    if (minBranchLength > 0) {
+        boolean changed = true
+        while (changed) {
+            changed = false
+            brEdges.eachWithIndex { e, i ->
+                if (prunedEdge[i] || bLengths[i] >= minBranchLength) return
+                boolean leaf1 = degree[e[0]] == 1
+                boolean leaf2 = degree[e[1]] == 1
+                if (leaf1 || leaf2) {
+                    prunedEdge[i] = true; degree[e[0]]--; degree[e[1]]--; changed = true
+                }
+            }
+        }
+    }
+
+    // ── Collapse degree-2 junction clusters ───────────────────────────────────
+    // Build mutable adjacency from non-pruned edges, then collapse junction clusters
+    // whose degree dropped to 2 (one arm was pruned). A degree-2 junction is just a
+    // pass-through node: merge its two branches and remove it — equivalent to
+    // reclassifying those junction pixels as slabs.
+    Map<Integer, List> adj = [:]
+    brEdges.eachWithIndex { e, i ->
+        if (prunedEdge[i]) return
+        int id1 = e[0], id2 = e[1]; double ew = bLengths[i]
+        if (!adj.containsKey(id1)) adj[id1] = []
+        if (!adj.containsKey(id2)) adj[id2] = []
+        adj[id1] << [id2, ew]
+        adj[id2] << [id1, ew]
+    }
+    while (true) {
+        def jEntry = adj.find { k, v -> k >= w * h && v.size() == 2 }
+        if (!jEntry) break
+        int jNode = jEntry.key as int
+        int    a    = jEntry.value[0][0] as int;  double lenA = jEntry.value[0][1] as double
+        int    b    = jEntry.value[1][0] as int;  double lenB = jEntry.value[1][1] as double
+        adj.remove(jNode)
+        adj[a] = adj[a]?.findAll { it[0] != jNode } ?: []
+        adj[b] = adj[b]?.findAll { it[0] != jNode } ?: []
+        if (a != b) {
+            adj[a] << [b, lenA + lenB]
+            adj[b] << [a, lenA + lenB]
+        } else {
+            loopLengths << (lenA + lenB)   // cycle through the collapsed junction
+        }
+    }
+
+    // ── Post-collapse metrics ─────────────────────────────────────────────────
+    // Rebuild degree from final adjacency; collect each undirected edge once (nodeId < neighborId).
+    degree = [:]
+    adj.each { nodeId, neighbors -> if (neighbors) degree[nodeId] = neighbors.size() }
+
+    List<Double> keptLengths = []
+    adj.each { nodeId, neighbors ->
+        neighbors.each { nb ->
+            if ((nodeId as int) < (nb[0] as int)) keptLengths << (nb[1] as double)
+        }
+    }
+    keptLengths.addAll(loopLengths)
+
+    int    nBranches = keptLengths.size()
+    double totalLen  = nBranches > 0 ? (keptLengths.sum() as double) : 0.0
+    double avgLen    = nBranches > 0 ? totalLen / nBranches          : 0.0
+    double maxLen    = nBranches > 0 ? keptLengths.max()             : 0.0
+    int    nJPruned  = degree.count { k, v -> k >= w * h && v >= 2 }
+    int    nEPruned  = degree.count { k, v -> v == 1 }
+
+    // ── Longest shortest path ─────────────────────────────────────────────────
+    // Dijkstra from every degree-1 node; record the longest pairwise shortest path.
+    // Graphs are small (< ~50 nodes), so O(V²) Dijkstra is fast enough.
+    Set<Integer>  allNodes  = degree.findAll { k, v -> v > 0 }.keySet() as Set<Integer>
+    List<Integer> leafNodes = degree.findAll { k, v -> v == 1 }.collect { k, v -> k as Integer }
+
+    double longestShortestPath = 0.0
+    leafNodes.each { startId ->
+        Map<Integer, Double> dist = [:]
+        allNodes.each { dist[it] = Double.MAX_VALUE }
+        dist[startId] = 0.0
+        Set<Integer> visited = [] as Set
+        while (true) {
+            Integer u = null; double minD = Double.MAX_VALUE
+            dist.each { k, v -> if (!visited.contains(k) && v < minD) { u = k; minD = v } }
+            if (u == null || minD == Double.MAX_VALUE) break
+            visited << u
+            adj[u]?.each { edge ->
+                int nbr = edge[0] as int; double ew = edge[1] as double
+                double nd = dist[u] + ew
+                if (nd < dist[nbr]) dist[nbr] = nd
+            }
+        }
+        leafNodes.each { endId ->
+            double d = dist[endId] ?: Double.MAX_VALUE
+            if (endId != startId && d < Double.MAX_VALUE)
+                longestShortestPath = Math.max(longestShortestPath, d)
+        }
+    }
 
     // ── Debug display ─────────────────────────────────────────────────────────
     if (debugIndices.contains(idx)) {
@@ -253,10 +392,10 @@ annotations.eachWithIndex { annotation, idx ->
             }
         }
         def stack = new ImageStack(w, h)
-        stack.addSlice("mask",                          origBp.convertToColorProcessor())
-        stack.addSlice("skeleton",                      skelBp.duplicate().convertToColorProcessor())
+        stack.addSlice("mask",                              origBp.convertToColorProcessor())
+        stack.addSlice("skeleton",                          skelBp.duplicate().convertToColorProcessor())
         stack.addSlice("labels  e=red j=yellow slab=white", labelCp)
-        def title = "ROI${idx}  b=${nBranches} j=${nJClusters} e=${nEndpoints}"
+        def title = "ROI${idx}  b=${nBranches} j=${nJPruned} e=${nEPruned}"
         new ImagePlus(title, stack).show()
     }
 
@@ -265,15 +404,17 @@ annotations.eachWithIndex { annotation, idx ->
     // TODO: triple points (clusters with degree 3) and quadruple points (degree ≥ 4)
     //       require per-cluster degree tracking during branch traversal.
     def ml = annotation.getMeasurementList()
-    ml.put("Skeleton: Branches",          nBranches as double)
-    ml.put("Skeleton: Junctions",         nJClusters as double)
-    ml.put("Skeleton: Junction Pixels",   nJunctions as double)
-    ml.put("Skeleton: Endpoint Pixels",   nEndpoints as double)
-    ml.put("Skeleton: Slab Pixels",       nSlabs as double)
-    ml.put("Skeleton: Avg Branch Length", avgLen)
-    ml.put("Skeleton: Max Branch Length", maxLen)
+    ml.put("Skeleton: Branches",              nBranches as double)
+    ml.put("Skeleton: Junctions",             nJPruned as double)
+    ml.put("Skeleton: Junction Pixels",       nJunctions as double)
+    ml.put("Skeleton: Endpoint Pixels",       nEndpoints as double)
+    ml.put("Skeleton: Slab Pixels",           nSlabs as double)
+    ml.put("Skeleton: Total Branch Length",   totalLen)
+    ml.put("Skeleton: Avg Branch Length",     avgLen)
+    ml.put("Skeleton: Max Branch Length",     maxLen)
+    ml.put("Skeleton: Longest Shortest Path", longestShortestPath)
     ml.close()
-    print "ROI ${idx}: branches=${nBranches} junctions=${nJClusters} endpoints=${nEndpoints}"
+    print "ROI ${idx}: branches=${nBranches} junctions=${nJPruned} endpoints=${nEPruned} lsp=${String.format('%.1f', longestShortestPath)}"
     measured++
 }
 

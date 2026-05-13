@@ -22,8 +22,8 @@ if (referenceObjects.size() == 1) {
 
     targetObjects.each { target ->
         def ml = target.getMeasurementList()
-        ml.putMeasurement("Centroid X µm (RefObject)", referenceX)
-        ml.putMeasurement("Centroid Y µm (RefObject)", referenceY)
+        ml.put("Centroid X µm (RefObject)", referenceX as double)
+        ml.put("Centroid Y µm (RefObject)", referenceY as double)
         ml.close()
     }
 

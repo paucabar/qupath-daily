@@ -3,20 +3,23 @@ import qupath.lib.objects.PathAnnotationObject
 import qupath.lib.roi.interfaces.ROI
 import static qupath.lib.gui.scripting.QPEx.*
 
-// Specify the class name to convert
-def targetClass = "YOUR_CLASS_NAME"  // Change this to the desired class
+// ── Configuration ────────────────────────────────────────────────────────────
+def targetClassName = "YOUR_CLASS_NAME"  // class name, null (all), or "" (unclassified)
+// ─────────────────────────────────────────────────────────────────────────────
 
-def detectionsToConvert = getDetectionObjects().findAll {
-    it.getPathClass()?.toString() == targetClass
-}
+def detectionsToConvert
+if (targetClassName == null)
+    detectionsToConvert = getDetectionObjects()
+else if (targetClassName == "")
+    detectionsToConvert = getDetectionObjects().findAll { it.getPathClass() == null }
+else
+    detectionsToConvert = getDetectionObjects().findAll { it.getPathClass() == getPathClass(targetClassName) }
 
 removeObjects(detectionsToConvert, true)
-def pathAnnotationObjects = detectionsToConvert.collect { detection ->
-    ROI roi = detection.getROI()
-    def annotation = PathObjects.createAnnotationObject(roi, getPathClass(targetClass))
-    return annotation
+def newAnnotations = detectionsToConvert.collect { detection ->
+    PathObjects.createAnnotationObject(detection.getROI(), detection.getPathClass())
 }
-addObjects(pathAnnotationObjects)
+addObjects(newAnnotations)
 
 fireHierarchyUpdate()
-print("Conversion done!")
+println "Converted ${detectionsToConvert.size()} detections to annotations."
