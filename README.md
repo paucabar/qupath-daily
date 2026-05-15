@@ -32,11 +32,11 @@ Copy the `training_template/` folder to your experiment project directory, then 
 
 1. Export annotated pairs from QuPath using `export_annotations/cellpose_training/`
 2. Place exported `_img.tif` / `_mask.tif` pairs in `data/` (flat or one subfolder per dataset)
-3. Run `python split_data.py data/` to generate `data/splits/train/` and `data/splits/test/`
+3. Split the data using the **Split data** cell in the notebook, or run `python split_data.py data/` from a terminal
 4. Train via notebook (`train_cpsam.ipynb`) or CLI (`python train_cpsam.py --model_name <name>`)
 5. The trained model is saved to `models/<model_name>` inside your copied folder
 
-Requires the `cpsam` conda environment.
+Requires the `cellpose-sam` conda environment.
 
 - `training_template/split_data.py` — creates reproducible train/test/eval splits; auto-detects flat or multi-dataset layout
 - `training_template/train_cpsam.ipynb` — step-by-step notebook with inline loss plot
