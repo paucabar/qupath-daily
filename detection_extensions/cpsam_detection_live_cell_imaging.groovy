@@ -38,37 +38,20 @@ def cellpose = Cellpose2D.builder( pathModel )
 def imageData = getCurrentImageData()
 def server = imageData.getServer()
 
-// Get the number of frames (timepoints)
+// Create full-image annotations for all timepoints
 def numFrames = server.nTimepoints()
-
-// Loop through each frame
-for (int t = 0; t < numFrames; t++) {
-    print("Processing frame: " + t)
-
-    // Create a full image annotation
-    createFullImageAnnotation(true, 0, t) // Adjust z-slice (0) and timepoint (t) if necessary
-    pathObjects = getAnnotationObjects() // Get newly created annotation
-
-    // Run Cellpose on the annotations
-    cellpose.detectObjects(imageData, pathObjects)
-    print(pathObjects)
-    // Delete full image annotation
-    removeObjects(pathObjects, true)
-    fireHierarchyUpdate()
-    
-    print("Finished processing frame: " + t)
-}
-
-// Refresh the viewer
+def frameStep = 1  // 1 = every frame, 2 = every other frame, etc.
+def frameAnnotations = []
+for (int t = 0; t < numFrames; t += frameStep)
+    frameAnnotations << createFullImageAnnotation(true, 0, t)
 fireHierarchyUpdate()
-print("Finished processing all frames.")
 
+// Run Cellpose once across all frame annotations
+print("Running Cellpose on ${numFrames} frame(s)")
+cellpose.detectObjects(imageData, frameAnnotations)
 
-// You could do some post-processing here, e.g. to remove objects that are too small, but it is usually better to
-// do this in a separate script so you can see the results before deleting anything.
-
-// Clear full image annotation
-//def fullImageAnnotation = getAnnotationObjects().findAll{ it.getPathClass() == null }
-//removeObjects(fullImageAnnotation , true)
+// Remove frame annotations, keeping detections
+removeObjects(frameAnnotations, true)
+fireHierarchyUpdate()
 
 println 'Cellpose detection script done'
