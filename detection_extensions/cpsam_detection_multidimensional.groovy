@@ -38,20 +38,21 @@ def cellpose = Cellpose2D.builder( pathModel )
 def imageData = getCurrentImageData()
 def server = imageData.getServer()
 
-// Create full-image annotations for all timepoints
-def numFrames = server.nTimepoints()
+// Create full-image annotations for all z-slices and timepoints
+def zStep = 1      // 1 = every slice, 2 = every other slice, etc.
 def frameStep = 1  // 1 = every frame, 2 = every other frame, etc.
-def frameAnnotations = []
-for (int t = 0; t < numFrames; t += frameStep)
-    frameAnnotations << createFullImageAnnotation(true, 0, t)
+def annotations = []
+for (int z = 0; z < server.nZSlices(); z += zStep)
+    for (int t = 0; t < server.nTimepoints(); t += frameStep)
+        annotations << createFullImageAnnotation(true, z, t)
 fireHierarchyUpdate()
 
-// Run Cellpose once across all frame annotations
-print("Running Cellpose on ${numFrames} frame(s)")
-cellpose.detectObjects(imageData, frameAnnotations)
+// Run Cellpose once across all annotations
+print("Running Cellpose on ${annotations.size()} plane(s)")
+cellpose.detectObjects(imageData, annotations)
 
-// Remove frame annotations, keeping detections
-removeObjects(frameAnnotations, true)
+// Remove annotations, keeping detections
+removeObjects(annotations, true)
 fireHierarchyUpdate()
 
 println 'Cellpose detection script done'
