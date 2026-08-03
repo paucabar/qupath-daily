@@ -28,7 +28,7 @@ Scripts for classifying objects based on morphology or other measurements.
 ### **cpsam_training/**
 Python toolkit for fine-tuning CellPose-SAM on custom annotated data. Unlike the Groovy scripts, this is used outside QuPath in a terminal or Jupyter notebook.
 
-Copy the `training_template/` folder to your experiment project directory, then follow the workflow in the notebook or the script docstrings:
+Copy the `training_template/` folder to your experiment project directory, then follow the workflow in the notebook, or see `training_template/README.md` for a step-by-step CLI-only walkthrough (no notebook required):
 
 1. Export annotated pairs from QuPath using `export_annotations/cellpose_training/`
 2. Place exported `_img.tif` / `_mask.tif` pairs in `data/` (flat or one subfolder per dataset)

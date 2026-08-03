@@ -3,7 +3,7 @@ Fine-tune CellPose-SAM on custom annotated data.
 
 Usage:
     python train_cpsam.py --model_name my_model
-    python train_cpsam.py --model_name my_model --n_epochs 200 --no_gpu
+    python train_cpsam.py --model_name my_model --n_epochs 600 --no_gpu
 
 Run from the training_template directory (or any copy of it). The trained model is
 saved to models/<model_name> relative to the current working directory.
@@ -73,7 +73,7 @@ def main() -> None:
         "--test_dir", default="data/splits/test",
         help="Directory of test images/masks",
     )
-    parser.add_argument("--n_epochs", type=int, default=400)
+    parser.add_argument("--n_epochs", type=int, default=200)
     parser.add_argument("--learning_rate", type=float, default=1e-5)
     parser.add_argument("--weight_decay", type=float, default=0.1)
     parser.add_argument(
