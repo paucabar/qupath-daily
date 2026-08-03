@@ -11,11 +11,6 @@ def hierarchy = imageData.getHierarchy()
 def outputDir = buildFilePath(PROJECT_BASE_DIR, 'export_cellpose')
 mkdirs(outputDir)
 
-def instanceDir = buildFilePath(outputDir, 'labels')
-mkdirs(instanceDir)
-def imageDir = buildFilePath(outputDir, 'images')
-mkdirs(imageDir)
-
 def server = imageData.getServer()
 def width  = server.getWidth()
 def height = server.getHeight()
@@ -58,8 +53,8 @@ def instanceServer = instanceBuilder.build()
 
 def name = GeneralTools.getNameWithoutExtension(imageData.getServer().getMetadata().getName())
 
-def pathInstance = buildFilePath(instanceDir, name + "_slice${zSlice}_frame${timepoint}_mask.tif")
-def pathImage    = buildFilePath(imageDir,    name + "_slice${zSlice}_frame${timepoint}_img.tif")
+def pathInstance = buildFilePath(outputDir, name + "_slice${zSlice}_frame${timepoint}_mask.tif")
+def pathImage    = buildFilePath(outputDir, name + "_slice${zSlice}_frame${timepoint}_img.tif")
 
 writeImageRegion(instanceServer, region, pathInstance)
 writeImageRegion(server, region, pathImage)

@@ -9,11 +9,6 @@ def hierarchy = imageData.getHierarchy()
 def outputDir = buildFilePath(PROJECT_BASE_DIR, 'export')
 mkdirs(outputDir)
 
-def instanceDir = buildFilePath(outputDir, 'labels')
-mkdirs(instanceDir)
-def imageDir = buildFilePath(outputDir, 'images')
-mkdirs(imageDir)
-
 def instanceBuilder = new LabeledImageServer.Builder(imageData)
     .backgroundLabel(0, ColorTools.BLACK)
     .downsample(downsample)
@@ -33,8 +28,8 @@ def region = RegionRequest.createInstance(server, downsample)
 
 def name = GeneralTools.getNameWithoutExtension(imageData.getServer().getMetadata().getName())
 
-def pathInstance = buildFilePath(instanceDir, name + "_mask.tif")
-def pathImage    = buildFilePath(imageDir,    name + "_img.tif")
+def pathInstance = buildFilePath(outputDir, name + "_mask.tif")
+def pathImage    = buildFilePath(outputDir, name + "_img.tif")
 
 writeImage(instanceServer, pathInstance)
 writeImageRegion(server, region, pathImage)
