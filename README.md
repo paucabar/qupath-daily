@@ -63,6 +63,13 @@ Scripts for exporting annotations, masks, or training labels.
 - **individualized_annotations/**
   - `export_binary_mask_bounding_boxes.groovy`
   - `export_binary_mask_multichannel.groovy`
+- **semantic_training/**
+  - `export_semantic_labels_regions.groovy` — multi-class label export per unclassified-annotation region, single plane
+  - `export_semantic_labels_zstack.groovy` — single-class label export across the whole image (all z-slices/timepoints), with an optional border/boundary label to separate touching instances downstream
+
+### **import_annotations/**
+Scripts for importing external data (e.g. model predictions) as annotations.
+- `import_predicted_labels_as_annotations.groovy` — imports a prediction/label image as annotations for curation; per-class threshold-based ROI extraction via ImageJ, auto-detects XY downsample mismatches, and skips images that already have curated annotations of the target class(es)
 
 ### **name_and_format_utilities/**
 Scripts for renaming or reformatting project entries.
