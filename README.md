@@ -58,6 +58,7 @@ Scripts for exporting annotations, masks, or training labels.
   - `export_labels_for_cellpose.groovy`
   - `export_labels_for_cellpose_all_zslices_and_timepoints.groovy`
   - `export_labels_for_cellpose_current_zslice_and_timepoint.groovy`
+  - `export_labels_for_cellpose_training_regions.groovy` — exports one image/mask pair per "Training"-classified region annotation, instance-labeling only the objects inside each region (2D only)
 - **geojson/**
   - `export_geojson.groovy`
 - **individualized_annotations/**
