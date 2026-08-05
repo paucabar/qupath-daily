@@ -92,7 +92,7 @@ General-purpose helper scripts for managing channels, annotations, or calibratio
 - `change_channel_names.groovy`
 - `change_channel_names_nchannel_variable.groovy` — sets channel names for images with either 3 or 4 channels
 - `detections_to_annotations.groovy`
-- `expand_or_erode_annotations.groovy` — replaces annotations with a dilated (positive) or eroded (negative) version, keeping the original classification
+- `expand_or_erode_annotations.groovy` — replaces annotations with a dilated (positive) or eroded (negative) version, keeping the original classification and parent nesting; by default respects the parent annotation's boundary (or image bounds, if none) so erosion doesn't recede from it and dilation doesn't cross it
 - `fill_annotations.groovy`
 - `prepend_folder_to_entry_name.groovy` — prepends the parent folder name to each project entry name
 - `remove_annotations.groovy`
