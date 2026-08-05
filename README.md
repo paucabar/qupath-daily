@@ -100,6 +100,7 @@ General-purpose helper scripts for managing channels, annotations, or calibratio
 - `remove_detections.groovy`
 - `set_pixel_calibration.groovy`
 - `set_project_classes.groovy` — sets the available classification classes for the project
+- `square_annotation_from_point.groovy` — converts point annotations into square annotations centered on each point, keeping the original classification (size in pixels, unaffected by calibration)
 
 ---
 
