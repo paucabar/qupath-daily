@@ -76,6 +76,12 @@ Scripts for importing external data (e.g. model predictions) as annotations.
 Scripts for renaming or reformatting project entries.
 - `rename_project_images.groovy` — renames project entries by combining the parent folder name and filename, stripping the file extension and a configurable suffix
 
+### **object_filtering/**
+Scripts for removing objects that fail a measurement-based or spatial criterion.
+- `filter_detections_by_measurement.groovy` — removes detections whose value for a given measurement (e.g. Circularity) falls outside a configurable threshold
+- `remove_annotations_at_image_boundaries.groovy` — removes objects whose ROIs touch or are within a set distance of an annotation boundary
+- `remove_detections_at_image_boundaries.groovy` — detection-native counterpart to the above; removes detections touching or within a set distance of the image border, without needing an annotation<->detection conversion
+
 ### **skeleton_analysis/**
 Scripts for analyzing skeletonized structures via ImageJ.
 - `analyze_skeleton.groovy`
@@ -96,7 +102,6 @@ General-purpose helper scripts for managing channels, annotations, or calibratio
 - `fill_annotations.groovy`
 - `prepend_folder_to_entry_name.groovy` — prepends the parent folder name to each project entry name
 - `remove_annotations.groovy`
-- `remove_annotations_at_image_boundaries.groovy` — removes objects whose ROIs touch or are within a set distance of an annotation boundary
 - `remove_detections.groovy`
 - `set_pixel_calibration.groovy`
 - `set_project_classes.groovy` — sets the available classification classes for the project
