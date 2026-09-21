@@ -115,12 +115,65 @@ Look at the loss curve before trusting the model: if train loss keeps
 dropping while test loss flattens or rises, the model is overfitting —
 consider fewer epochs, more training data, or a lower `--learning_rate`.
 
+cellpose only evaluates the test set every few epochs (every 10th at the time
+of writing) and reports `0.0` for the epochs in between. Those zeros are not
+readings: they are left blank in the CSV and dropped from the plot, which marks
+the real readings with dots. Note the CSV numbers epochs from 1 while cellpose's
+own log numbers them from 0, so CSV epoch 51 is log epoch 50.
+
+Treat the loss curve as a training-health check, not a quality score. The loss
+is a pixel-wise regression on the flow field, while what you care about is
+whether whole objects are found and outlined — the two can diverge, and a
+checkpoint with slightly worse test loss can segment better. Step 5 measures
+the thing you actually want.
+
+## Step 5 — Compare models on the test set
+
+Losses from different runs aren't comparable when the test sets differ, so to
+score models against each other:
+
+```
+python evaluate_models.py --models cpsam models/my_model models/older_model
+```
+
+This runs each model over every pair in `data/splits/test/`, compares predicted
+labels with the exported masks, and reports average precision (AP) at IoU
+thresholds 0.50–0.95. AP here is cellpose's definition, `TP / (TP + FP + FN)` at
+a given threshold — AP@0.5 says whether objects are found at all, the higher
+thresholds say how well the outlines agree. The literal model name `cpsam`
+scores the stock pretrained model, which is the baseline any fine-tune has to
+beat.
+
+With one subfolder per dataset in `data/`, results are also broken down by
+dataset, which shows which dataset a model is weakest on — i.e. where annotating
+more would pay. Results go to `evaluation/per_image_ap.csv` and
+`evaluation/summary.csv`.
+
+```
+# Also write the predicted labels as TIFFs, to look at the disagreements
+python evaluate_models.py --models cpsam models/my_model --save_masks
+
+# Re-score those saved predictions (different thresholds, say) without a GPU
+python evaluate_models.py --models cpsam models/my_model --reuse_masks --no_gpu
+```
+
+Two things to keep in mind when reading the numbers. The split is per file, so
+if several files are crops of one image, that image can contribute to both sides
+and the scores are optimistic as an estimate of generalisation to new images.
+And if the masks were made by curating some model's predictions, that model is
+partly being scored against its own output.
+
 ## Troubleshooting
 
 - **`matplotlib` not installed** — training still completes and the CSV is
   still saved; only the PNG/PDF loss plot is skipped. Install with
   `pip install matplotlib` (don't use `conda install` — it tends to trigger
   a full environment solve/reshuffle in this environment).
+- **`No image/mask pairs found`** from `evaluate_models.py` — it looks in
+  `data/splits/test/`, so run `split_data.py` first. On Windows the script uses
+  extended-length paths, which are only valid when absolute; a relative path is
+  absolutised for you, but keep that in mind if the helpers get copied
+  elsewhere.
 - **`ERROR: no valid _img.tif/_mask.tif pairs found`** — check that both
   files of each pair share the same `<name>` prefix and are directly inside
   `data/` (or inside one of its dataset subfolders, not nested further).
