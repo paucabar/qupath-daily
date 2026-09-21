@@ -3,3 +3,7 @@ data/*
 !data/.gitkeep
 models/*
 !models/.gitkeep
+
+# Ignore evaluation outputs (evaluate_models.py) — the CSVs name the images they came from,
+# and the saved masks are predictions of held-out data
+evaluation/
