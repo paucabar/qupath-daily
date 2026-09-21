@@ -9,6 +9,7 @@ A collection of [QuPath](https://qupath.github.io/) Groovy scripts used for dail
 ### **basic_measurements/**
 Scripts for calculating or cleaning object measurements.
 - `add_circularity_and_solidity.groovy`
+- `add_imagej_shape_measurements.groovy`
 - `add_intensity_measurements.groovy`
 - `add_shape_measurements.groovy`
 - `clean_measurement_list.groovy`
