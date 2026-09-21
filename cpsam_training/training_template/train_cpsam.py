@@ -32,21 +32,44 @@ from cellpose import io, models, train
 
 
 def save_outputs(model_name: str, train_losses: list[float], test_losses: list[float]) -> None:
+    """
+    Write the loss curves to models/<model_name>_losses.csv and _loss.png.
+
+    cellpose only evaluates the test set every few epochs (every 10th at the time of writing) and
+    returns 0.0 for every other epoch. Those zeros are not readings: written as-is they drag the
+    plotted test curve down to the axis between real points and make a fine run look unstable.
+    They are left blank in the CSV and dropped from the plot, which marks the real readings.
+
+    Epochs are numbered from 1 here, while cellpose's own log numbers them from 0, so CSV epoch 51
+    is log epoch 50.
+    """
     out_dir = Path("models")
     out_dir.mkdir(exist_ok=True)
+
+    epochs = list(range(1, len(train_losses) + 1))
+    evaluated = [(e, vl) for e, vl in zip(epochs, test_losses) if vl > 0]
 
     csv_path = out_dir / f"{model_name}_losses.csv"
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["epoch", "train_loss", "test_loss"])
-        for i, (tl, vl) in enumerate(zip(train_losses, test_losses), 1):
-            writer.writerow([i, tl, vl])
-    print(f"Losses  → {csv_path}")
+        for e, tl, vl in zip(epochs, train_losses, test_losses):
+            writer.writerow([e, tl, vl if vl > 0 else ""])
+    print(f"Losses  -> {csv_path} ({len(evaluated)} of {len(epochs)} epochs have a test loss)")
+
+    if evaluated:
+        best_epoch, best_loss = min(evaluated, key=lambda item: item[1])
+        print(f"Best test loss {best_loss:.4f} at epoch {best_epoch}, "
+              f"final {evaluated[-1][1]:.4f} at epoch {evaluated[-1][0]}")
+    else:
+        print("No test loss was evaluated - train losses only")
 
     if _HAS_MPL:
         fig, ax = plt.subplots()
-        ax.plot(train_losses, label="train")
-        ax.plot(test_losses, label="test")
+        ax.plot(epochs, train_losses, label="train")
+        if evaluated:
+            ax.plot([e for e, _ in evaluated], [vl for _, vl in evaluated],
+                    marker="o", label="test (evaluated epochs)")
         ax.set_xlabel("Epoch")
         ax.set_ylabel("Loss")
         ax.legend()
@@ -54,9 +77,9 @@ def save_outputs(model_name: str, train_losses: list[float], test_losses: list[f
         png_path = out_dir / f"{model_name}_loss.png"
         fig.savefig(png_path, dpi=150)
         plt.close(fig)
-        print(f"Loss plot → {png_path}")
+        print(f"Loss plot -> {png_path}")
     else:
-        print("Loss plot skipped (matplotlib not available — install it to enable)")
+        print("Loss plot skipped (matplotlib not available - install it to enable)")
 
 
 def main() -> None:
@@ -106,7 +129,7 @@ def main() -> None:
         model_name=args.model_name,
     )
 
-    print(f"Model   → {model_path}")
+    print(f"Model   -> {model_path}")
     save_outputs(args.model_name, train_losses, test_losses)
 
 
