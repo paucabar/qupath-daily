@@ -39,6 +39,13 @@ Copy the `training_template/` folder to your experiment project directory, then 
 
 Requires the `cellpose-sam` conda environment.
 
+### **instanseg_training/**
+Python helper for training InstanSeg on data exported from QuPath, used outside QuPath like `cpsam_training/`.
+- `pack_instanseg_dataset.py`: packs the pairs from `export_annotations/instanseg_training/` into InstanSeg's `<name>_dataset.pth`.
+  - It reads the channel names and pixel size from each OME-TIFF and relabels the masks.
+  - It splits Train/Validation/Test by source image. Use `--split-csv` for your own split, e.g. by patient.
+  - Train with `-d_p <export folder> -data <name> -source "[<name>]"`.
+
 - `training_template/split_data.py` — creates reproducible train/test/eval splits; auto-detects flat or multi-dataset layout
 - `training_template/train_cpsam.ipynb` — step-by-step notebook with inline loss plot
 - `training_template/train_cpsam.py` — CLI equivalent; saves loss curve as PNG and CSV
@@ -46,6 +53,10 @@ Requires the `cellpose-sam` conda environment.
 ### **detection_extensions/**
 Scripts for cell detection using external models and extensions (e.g., StarDist, Cellpose, ImageJ).
 - `cpsam_detection_live_cell_imaging.groovy` — **Requires QuPath 0.5.0 + qupath-extension-cellpose 0.9.3.** In QuPath 0.7.0, the extension does not correctly use the timepoint from the annotation ROI when exporting image tiles, causing all frames to be detected using frame 0 data. This is a known regression; do not run this script in QuPath 0.7.0 until a fix is confirmed.
+- `instanseg_detection.groovy`: InstanSeg detection with a custom or downloaded model folder (rdf.yaml + instanseg.pt).
+  - Input channels are given by name or index, and the output channel is selectable (e.g. cells only from a nuclei+cells model).
+  - It runs in the region annotations of a class, or in the selected annotations, or on the whole image.
+  - Requires qupath-extension-instanseg 0.1.6 (tested in QuPath 0.7.0).
 - `imagej_threshold_detection_on_annotations.groovy` — creates threshold-based annotation objects using an ImageJ threshold method, keeping only regions overlapping with target annotations
 - `stardist_fluorescence_cell_detection.groovy`
 - `stardist_fluorescence_cell_detection_with_preprocessing.groovy`
@@ -60,6 +71,13 @@ Scripts for exporting annotations, masks, or training labels.
   - `export_labels_for_cellpose_all_zslices_and_timepoints.groovy`
   - `export_labels_for_cellpose_current_zslice_and_timepoint.groovy`
   - `export_labels_for_cellpose_training_regions.groovy` — exports one image/mask pair per "Training"-classified region annotation, instance-labeling only the objects inside each region (2D only)
+- **instanseg_training/**
+  - `export_labels_for_instanseg_training_regions.groovy`: the InstanSeg version of the Cellpose training-regions export.
+    - Writes the image as OME-TIFF, so the channel names and pixel size are kept.
+    - Channels are chosen by name.
+    - Labels can come from annotations or detections of one or more classes.
+    - Large regions can be cut into tiles that lie fully inside them.
+    - Pack the output with `instanseg_training/pack_instanseg_dataset.py`.
 - **geojson/**
   - `export_geojson.groovy`
 - **individualized_annotations/**
