@@ -111,6 +111,7 @@ Scripts for computing distances, relationships, or reference-based measurements.
 - `add_reference_centroid_xy.groovy`
 - `distance_to_nearest_objects.groovy`
 - `is_in_object.groovy`
+- `peripheral_overlap_with_class.groovy` — for each detection, measures the % of a band along its boundary (configurable inner/outer width, core excluded) covered by objects of a given class, e.g. objects created from a thresholder
 
 ### **utilities/**
 General-purpose helper scripts for managing channels, annotations, or calibration.
