@@ -107,6 +107,7 @@ Scripts for analyzing skeletonized structures via ImageJ.
 
 ### **spatial_relationships/**
 Scripts for computing distances, relationships, or reference-based measurements.
+- `add_centroid_relative_to_parent_rectangle.groovy` — adds each detection's centroid (calibrated) using its rectangle parent's top-left corner as the origin; detections with a non-rectangle parent or no parent are skipped
 - `add_reference_centroid_xy.groovy`
 - `distance_to_nearest_objects.groovy`
 - `is_in_object.groovy`
