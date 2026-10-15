@@ -92,7 +92,8 @@ Scripts for importing external data (e.g. model predictions) as annotations.
 - `import_predicted_labels_as_annotations.groovy` — imports a prediction/label image as annotations for curation; per-class threshold-based ROI extraction via ImageJ, auto-detects XY downsample mismatches, and skips images that already have curated annotations of the target class(es)
 
 ### **name_and_format_utilities/**
-Scripts for renaming or reformatting project entries.
+Scripts for renaming or reformatting project entries and image files.
+- `convert_to_pyramidal_ome_tiff.groovy` — converts the image to a pyramidal, tiled, lossless (ZLIB) OME-TIFF, so non-pyramidal exports (e.g. Leica `*_Merged.ome.tif`) open fast; optionally sets the channel names first; existing outputs are skipped
 - `rename_project_images.groovy` — renames project entries by combining the parent folder name and filename, stripping the file extension and a configurable suffix
 
 ### **object_filtering/**
