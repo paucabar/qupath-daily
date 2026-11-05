@@ -21,6 +21,11 @@ Scripts for comparing segmentation results or evaluating model performance.
 ### **cell_analysis/**
 Scripts for generating and analyzing cell objects.
 - `create_cells_from_annotation_hierarchy.groovy`
+- `create_cells_from_nuclei_and_cell_mask.groovy`: builds one cell per nucleus when there is no cell counterstain.
+  - Each nucleus grows until it meets a neighbouring cell or the edge of a cell mask (e.g. an object from a pixel classifier).
+  - The growth only moves through the mask, so a cell never takes cytoplasm that is only close to it across background.
+  - It adds intensity and shape measurements, plus a Nucleus/Cytoplasm mean intensity ratio per channel.
+  - Nuclei and mask can be detections or annotations; both are replaced by the cells.
 
 ### **classification/**
 Scripts for classifying objects based on morphology or other measurements.
